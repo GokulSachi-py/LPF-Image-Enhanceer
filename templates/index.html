@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>LPF Image Enhancer</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+  <script src="{{ url_for('static', filename='app.js') }}" defer></script>
+</head>
+<body>
+  <main class="page">
+    <header class="page-header">
+      <h1>LPF Image Enhancer</h1>
+      <p>Upload a low-light image to enhance it and view the image measurements.</p>
+    </header>
+
+    <form id="enhance-form" class="upload-card">
+      <label class="upload-label" for="image-input">Choose a low-light image</label>
+      <div class="upload-row">
+        <input id="image-input" name="image" type="file" accept=".png,.jpg,.jpeg,.bmp,.webp,image/*" required>
+        <button id="submit-button" type="submit">Enhance image</button>
+      </div>
+      <p class="upload-help">PNG, JPG, BMP, or WEBP. Maximum 25 MB and 4 megapixels.</p>
+
+      <details class="reference-option">
+        <summary>Have a matching well-lit image? Add it for PSNR, SSIM, and LPIPS.</summary>
+        <label for="reference-input">Reference image (optional)</label>
+        <input id="reference-input" name="reference" type="file" accept=".png,.jpg,.jpeg,.bmp,.webp,image/*">
+      </details>
+    </form>
+
+    <p id="error-box" class="error" role="alert" hidden></p>
+    <p id="loading-state" class="loading" role="status" hidden>Enhancing image… This may take a little while.</p>
+
+    <section id="results" class="results" hidden>
+      <h2>Results</h2>
+      <div class="comparison">
+        <article class="image-card">
+          <h3>Input</h3>
+          <img id="original-image" alt="Original low-light input">
+        </article>
+        <article class="image-card">
+          <div class="output-heading">
+            <h3>LPF output</h3>
+            <a id="download-link" download="lpf-enhanced.png">Download</a>
+          </div>
+          <img id="enhanced-image" alt="LPF-enhanced image">
+        </article>
+      </div>
+
+      <section class="metrics">
+        <h2>Metrics</h2>
+        <p id="metrics-note" class="metrics-note"></p>
+        <div id="reference-metrics" class="metric-grid" hidden>
+          <article class="metric"><span>PSNR</span><strong id="metric-psnr">—</strong><small>dB (higher is better)</small></article>
+          <article class="metric"><span>SSIM</span><strong id="metric-ssim">—</strong><small>0–1 (higher is better)</small></article>
+          <article class="metric"><span>LPIPS</span><strong id="metric-lpips">—</strong><small>distance (lower is better)</small></article>
+        </div>
+        <p id="lpips-note" class="metrics-note" hidden></p>
+        <div class="metric-grid">
+          <article class="metric"><span>Input brightness</span><strong id="brightness-before">—</strong><small>Mean luminance (%)</small></article>
+          <article class="metric"><span>Output brightness</span><strong id="brightness-after">—</strong><small>Mean luminance (%)</small></article>
+          <article class="metric"><span>Input contrast</span><strong id="contrast-before">—</strong><small>Luminance deviation (%)</small></article>
+          <article class="metric"><span>Output contrast</span><strong id="contrast-after">—</strong><small>Luminance deviation (%)</small></article>
+        </div>
+      </section>
+    </section>
+
+    <footer>LPF low-light image enhancement</footer>
+  </main>
+</body>
+</html>

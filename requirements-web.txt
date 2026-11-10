@@ -1,0 +1,6 @@
+Flask>=2.2
+numpy>=1.21
+Pillow>=9.1
+torch>=1.12
+lpips>=0.1.4
+thop>=0.1.1

@@ -4,12 +4,11 @@ __pycache__/
 venv/
 env/
 .env
+.DS_Store
 
-dataset/
-results/
-RetinexFormer/
-manual/
-compare.py
-enhance.py
-real_commands.txt
+LPF/.git/
+RetinexFormer/.git/
+RetinexFormer/.eggs/
+RetinexFormer/basicsr.egg-info/
 
+results/web_runs/

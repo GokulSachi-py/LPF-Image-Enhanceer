@@ -1,0 +1,152 @@
+# ============================================================
+# LPF vs RetinexFormer - Actual Commands Executed (Real Process)
+# ============================================================
+# These are the actual commands that were run in order.
+# LPF weights came bundled with the repo (checkpoints/LOL/LOL.pth).
+# RetinexFormer weights were downloaded from the authors' Google Drive.
+# ============================================================
+
+# ========================
+# STEP 1: Clone LPF Repository (includes trained weights)
+# ========================
+git clone https://github.com/DeniJsonC/LPF.git
+
+# ========================
+# STEP 2: Clone RetinexFormer Repository
+# ========================
+git clone https://github.com/hansonbee/LLE.git RetinexFormer
+
+# ========================
+# STEP 3: Install Dependencies
+# ========================
+pip install torch torchvision scikit-image natsort opencv-python lpips thop tensorboardX
+pip install einops addict future lmdb pyyaml yapf gdown
+
+# ========================
+# STEP 4: Install RetinexFormer's local BasicSR
+# ========================
+cd RetinexFormer
+python setup.py develop --no_cuda_ext
+cd ..
+
+# ========================
+# STEP 5: Fix basicsr compatibility with newer torchvision
+# ========================
+# Manually patched: basicsr/data/degradations.py
+# Changed: from torchvision.transforms.functional_tensor import rgb_to_grayscale
+# To:      from torchvision.transforms.functional import rgb_to_grayscale
+
+# ========================
+# STEP 6: Download LOL-v1 Dataset
+# ========================
+gdown 1L-kqSQyrmMueBh_ziWoPFhfsAh50h20H
+Expand-Archive -Path LOLv1.zip -DestinationPath dataset
+
+# ========================
+# STEP 7: Rename Dataset Folders to Match Expected Structure
+# ========================
+Rename-Item dataset\LOLv1 LOLdataset
+Rename-Item dataset\LOLdataset\Train our485
+Rename-Item dataset\LOLdataset\our485\input low
+Rename-Item dataset\LOLdataset\our485\target high
+Rename-Item dataset\LOLdataset\Test eval15
+Rename-Item dataset\LOLdataset\eval15\input low
+Rename-Item dataset\LOLdataset\eval15\target high
+
+# ========================
+# STEP 8: Download RetinexFormer Pretrained Weights from Google Drive
+# ========================
+cd RetinexFormer
+gdown --folder https://drive.google.com/drive/folders/1ynK5hfQachzc8y96ZumhkPPDXzHJwaQV
+Rename-Item pretrain_model pretrained_weights
+cd ..
+
+# ========================
+# STEP 9: Fix LPF demo.py Bug (typo in variable name)
+# ========================
+# In demo.py, the model output was assigned to 'retored' (typo)
+# but 'restored' (the input variable) was being saved instead.
+# Fixed: retored -> restored so the enhanced output is saved correctly.
+
+# ========================
+# STEP 10: Fix RetinexFormer for CPU (no CUDA available)
+# ========================
+# In RetinexFormer/Options/RetinexFormer_LOL_v1.yml:
+#   Changed num_gpu: 1 -> num_gpu: 0
+# In Enhancement/test_from_dataset.py:
+#   Changed .cuda() -> .to(device)
+#   Wrapped torch.cuda.ipc_collect() / empty_cache() with if torch.cuda.is_available()
+#   Changed torch.load(weights) -> torch.load(weights, map_location=device)
+
+# ========================
+# STEP 11: Fix LPF evaluation.py use_gpu argument parsing
+# ========================
+# Changed: use_gpu = args.use_gpu
+# To:      use_gpu = args.use_gpu in ['true', 'True', '1', True]
+
+# ========================
+# STEP 12: Run LPF Inference (using pretrained weights from repo)
+# ========================
+cd LPF
+python demo.py --input_dir ../dataset/LOLdataset/eval15/low --result_dir ../results/LPF/enhanced --weights checkpoints/LOL/LOL.pth
+cd ..
+
+# ========================
+# STEP 13: Run RetinexFormer Inference (using downloaded pretrained weights)
+# ========================
+cd RetinexFormer
+python Enhancement/test_from_dataset.py --opt Options/RetinexFormer_LOL_v1.yml --weights pretrained_weights/LOL_v1.pth --dataset LOL_v1 --result_dir ../results/RetinexFormer
+cd ..
+
+# ========================
+# STEP 14: Copy RetinexFormer Results to Flat Directory
+# ========================
+New-Item -ItemType Directory -Force -Path results\RetinexFormer\enhanced
+Copy-Item "results\RetinexFormer\LOL_v1\RetinexFormer_LOL_v1\LOL_v1\*" "results\RetinexFormer\enhanced\"
+
+# ========================
+# STEP 15: Evaluate LPF (PSNR, SSIM, LPIPS)
+# ========================
+cd LPF
+python evaluation.py -dirA ../results/LPF/enhanced -dirB ../dataset/LOLdataset/eval15/high -type png
+cd ..
+# Result: PSNR: 23.68, SSIM: 0.840, LPIPS: 0.127
+
+# ========================
+# STEP 16: Evaluate RetinexFormer (PSNR, SSIM, LPIPS)
+# ========================
+cd LPF
+python evaluation.py -dirA ../results/RetinexFormer/enhanced -dirB ../dataset/LOLdataset/eval15/high -type png
+cd ..
+# Result: PSNR: 25.15, SSIM: 0.843, LPIPS: 0.131
+
+# ========================
+# STEP 17: Run Full Comparison Script
+# ========================
+python compare.py
+
+# ========================
+# STEP 18: Live Demo / Test Any Custom Image (e.g. Teacher's Input Image)
+# ========================
+# Enhance a single custom image with BOTH models and create a side-by-side comparison:
+# python enhance.py --image path/to/input.jpg
+
+# Or enhance with LPF only:
+# python enhance.py --image path/to/input.jpg --model lpf
+
+# Or enhance with RetinexFormer only:
+# python enhance.py --image path/to/input.jpg --model retinexformer
+
+# Or enhance an entire folder:
+# python enhance.py --input_dir path/to/folder
+
+# ============================================================
+# OUTPUT FILES:
+# ============================================================
+# results/LPF/enhanced/              → 15 LPF enhanced images
+# results/RetinexFormer/enhanced/    → 15 RetinexFormer enhanced images
+# results/comparison/                → 15 side-by-side comparison images
+# results/metrics_comparison.csv     → Per-image metrics CSV
+# results/demo_enhanced/             → Enhanced output from live demo (enhance.py)
+# ============================================================
+
